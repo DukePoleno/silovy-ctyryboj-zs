@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Silový čtyřboj pro ZŠ</title>
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* SSTaS Karviná brand colors */
+    --sstas-teal: #00b09b;       /* tyrkysová - primární barva */
+    --sstas-teal-dark: #008a78;  /* tmavší tyrkysová */
+    --sstas-navy: #122043;       /* tmavě modrá - sekundární */
+    --sstas-navy-dark: #122043;  /* tmavší modrá */
+    --sstas-navy-light: #1a2d5a; /* světlejší modrá */
+    --gold: #f0a500;             /* zlatá pro důležité info */
+    --green: #00b09b;
+    --green-dark: #008a78;
+    --red: #c8102e;
+    --white: #ffffff;
+    --shadow: 0 8px 32px rgba(0,0,0,0.3);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--sstas-navy-dark);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 600px;
+    min-height: 100vh;
+    background: var(--sstas-navy-dark);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Dekorativní ozubené kolo v pozadí */
+  .app::before {
+    content: '';
+    position: fixed;
+    top: -150px;
+    right: -150px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(0,176,155,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .app::after {
+    content: '';
+    position: fixed;
+    bottom: -100px;
+    left: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(0,176,155,0.07) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCREENS */
+  .screen {
+    display: none;
+    min-height: 100vh;
+    flex-direction: column;
+    padding: 24px 20px 40px;
+    animation: fadeIn 0.2s ease;
+    background: var(--sstas-navy-dark);
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* HEADER */
+  .screen-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0,176,155,0.3);
+  }
+
+  .back-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .back-btn:active { background: rgba(255,255,255,0.2); }
+
+  .screen-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .screen-title small {
+    display: block;
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-top: 2px;
+  }
+
+  /* MENU */
+  #scr-menu {
+    background: linear-gradient(160deg, var(--sstas-navy) 0%, var(--sstas-navy-dark) 60%);
+    justify-content: center;
+    padding-top: 60px;
+  }
+
+  .menu-logo {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .menu-logo .gear-decoration {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 8px;
+    opacity: 0.85;
+  }
+  .menu-logo .sstas-logo-svg {
+    display: block;
+    margin: 0 auto 8px;
+    opacity: 0.9;
+  }
+  .menu-logo h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .menu-logo h1 .navy { color: #ffffff; }
+  .menu-logo h1 .teal { color: var(--sstas-teal); }
+  .menu-logo h1 .zs { display: block; color: #ffffff; font-size: 22px; letter-spacing: 8px; margin-top: 8px; }
+  .menu-logo .school-name {
+    font-size: 11px;
+    color: rgba(0,176,155,0.7);
+    margin-top: 4px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+  }
+  .menu-logo p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 6px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .menu-logo .divider {
+    width: 60px; height: 3px;
+    background: var(--sstas-teal);
+    margin: 14px auto;
+    border-radius: 2px;
+  }
+
+  .menu-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* BIG BUTTONS */
+  .big-btn {
+    border: none;
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.12s, filter 0.12s;
+    text-align: left;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .big-btn:active { transform: scale(0.97); filter: brightness(0.9); }
+
+  .big-btn::after {
+    content: '›';
+    position: absolute;
+    right: 24px;
+    font-size: 28px;
+    color: rgba(0,176,155,0.7);
+    font-weight: 300;
+  }
+
+  .big-btn .btn-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+    width: 52px;
+    text-align: center;
+  }
+  .big-btn .btn-text {
+    flex: 1;
+  }
+  .big-btn .btn-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+  }
+  .big-btn .btn-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    display: block;
+    margin-top: 2px;
+  }
+
+  .btn-chlapci { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-divky { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-kliky { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-trojskok { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-shyby { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-prednosy { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-splh { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-hod { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .btn-lehysedy { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+
+  /* FORM */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .form-input {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 20px;
+    font-family: 'Barlow', sans-serif;
+    font-weight: 500;
+    color: white;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus {
+    border-color: var(--sstas-teal);
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .form-input::placeholder { color: rgba(255,255,255,0.25); }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* INFO CARD */
+  .info-card {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .info-card .info-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.1;
+  }
+  .info-card .info-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+  }
+  .info-card.highlight {
+    background: rgba(0, 176, 155, 0.1);
+    border-color: rgba(0, 176, 155, 0.4);
+  }
+
+  /* POKUS ROW */
+  .pokus-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .pokus-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .pokus-group .form-input {
+    font-size: 22px;
+    text-align: center;
+    padding: 14px 8px;
+  }
+
+  /* SUBMIT BTN */
+  .submit-btn {
+    width: 100%;
+    border: none;
+    border-radius: var(--radius);
+    padding: 20px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: white;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: transform 0.12s, filter 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+  .submit-btn:active { transform: scale(0.97); filter: brightness(0.9); }
+  .submit-btn.green { background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal)); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--sstas-teal);
+    color: white;
+    padding: 16px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 16px;
+    box-shadow: var(--shadow);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1000;
+    white-space: nowrap;
+  }
+  .toast.error { background: var(--red); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 37, 64, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: white; font-size: 15px; opacity: 0.7; }
+
+  /* AUTH */
+  #scr-auth {
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding-top: 0;
+  }
+  .auth-card {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(0,176,155,0.2);
+    border-radius: var(--radius);
+    padding: 32px 28px;
+    text-align: center;
+    width: 100%;
+  }
+  .auth-card h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+  }
+  .auth-card p { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 24px; }
+  .auth-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--sstas-teal-dark), var(--sstas-teal));
+    border: none;
+    border-radius: 12px;
+    padding: 18px;
+    color: white;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .separator { height: 1px; background: rgba(255,255,255,0.08); margin: 8px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- AUTH SCREEN -->
+  <div class="screen active" id="scr-auth">
+    <div class="menu-logo">
+      <img class="sstas-logo-svg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMoAAABuCAIAAADpihsHAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAvEklEQVR42u19d3Rd1ZX+3vucc+8r6pIlV1nuNsbGNrYphlBMAkmGSYchnQSSTIaZyWSSXyZ1SjIzyTBJSCAhZQKZFMLQQ2+mYxvbuOFu4yZLlqz+pFfuvefs/fvjPsnGOJhigQlvL61la713r275zi7fLgdrmhZDSUoyPEKlR1CSErxKUoJXSUpSgldJSvAqSQleJSlJCV4lKcGrJCV4laQkJXiVpASvkpTgVZKSlOBVkhK8SlKCV0lKUoJXSUrwGmZBBCy9wRK8jv1VI4iAdeAEsASxEryOlcKKLzgXiKekJi1JLYUAREpq7PgU/ea6XAERYblgFiyY5JJGFSxs2AsPbMCIQSFI6YUeX6KSVRPfRM6Ws6G8d767cI5LGWeQK3yYOlpq0rhuL5asZAleQ0YOEIFQ4GWbNUQMrDTW4PsXOOf00zv0/z2j+gMeXSVja9Sebtnfg0YjQ8lQvrV9L0IQwMhCEJETJBR8WYhkdjimJizzsK2Xbn9WtfTB3Wtx5wHwjWuqRScIwCVsvaXhhQj5UFDc6GpurHUJzfkAARBeluNEVkAAtRJfqdCCp5TRDkU5iTFaQtdb2LVHkiDkk8bJ+SdKbTkCQDagZdvh0S1OKy0viTABMFr2dKhMnkdW0kdOD1c8z7PG8fg6k4tkRxsRScm1f+v6XoRYiHheI3/6bbYyiZ4Ok5o8zbPGKU20sUWMppfEBymS3hyJ8OQG11DB8ybAmBrxtVmyBZZvR89ACV9vXXixQELbjy3ilKcGIv3oZr16N9ZXsFY8oVZt3w+dOdDqpfQXApHi5k45aTz6HkSOOjLqzjX4yBalNJRoibeu74UIkeOx1ViTRER8fDPc/iwu2Qw3PYOO2RiePAqtPZrrhMCMlWlIJ0QYkp56fAsu2Yy+EhXniPB1uRUkKv68mA2hl/y05HsNGxMhIL4RQgbUrb2olfKMbc+4IMK0LwnDeBSwIwA7lto0pjzrIi+00NpDRkPBAnMRW5qGG2T5fAERAVBAtFae0cxFxUmEhUIoIvGnitDzzFvZYr9e8BIAhaqjn0O2KTZnTZf93ZIN4NwTMOUzM7b3HX2tIyCzjKhgQ8IIQQQVCZ5UB4oAQKwjJ9iXl8DGekOGYYkgyQnTJ1prAUAR9fRk2jt6U+mEsw4V5XOFiU1jjKeYRZHKh0FLa4dS9Ja1268bvASN5rY+3NDqnz7ZTqzDvzvfFGxYlxZPea19sGkfeUZYjopSqa8AAO3EGQUfP1OGcORYEp66bRU8uhlS/lFP9Wo8CcKBXPbSj/3F5z/1oVwu5xlvX9uBD374/23Yuqumrnx/a/c/fP6i73zz74hYhJXyL7r0yzt3tZaVJdlxyfcaboABakN/fBY27CNPS115vrEafOMd6Ic/LFX9ESslh/pqhEcAlyYYUQEsBIAAVoQdxyIAVqEdXTWMdyCQ8FLf+PY1a57bkkqlAKFp3Oibf/9fUyaO2b+j9a8/9d4f/MeXUgljlE4mUt+/+td33f1EeVnK8VsUW/B6J4UIMbRq9R44kKH+QO/r1St3wR9XUVu/JAw5AARBAEJwjvIReEoIY7MECOAEkobPnc4J44AVKQWEWqHSQCjChKQKDlfvRqJh8r+U1vmcXbp89UUfeEci4TnLtTWVi047KZE0P7ryKwBgrdXGPPTI0s9/4XvlldXC7q3s2uPrPZ0QEVk4iABACTAI+AY0AUuRekDEfBg21dD4enx6G7BgwgNmAATLPLLM/e1iq5Q2Rj+8Edbukco0F0KaO96eOZUjpzOBuup+zEXDV0BhtOns6v34xYuvu/Y7zkWCShPF6pnFKlL79h84+x2XHejJ+T6+hTXX66+9Bl1k8jQYJZ4SXwsBDr4DJITARnVpuvSsaNFkGlsHBzLUlgGtAFEyOWgawadPEsuEWu5dZ7a1U28eW3tFk5s/QaxDz6h1zdSXB6WG6fIdu7Ky9LIVG+pGVJxy8uwoCpnFWcsiCMACH/n0V1dveL68PHa5sASv11tEgARAAAVQDmILI2fLPbrs3Gh0BffneXQlzpuAvuLmTkCEkxrh3BOiyhQJQi7Uj28GAfE0KGKjYN4ER6J8g9vbsaUbPD1M2gsBRdhPJB96ZPk5Z85tahyrlFJaK6WI1L9892fX/e7eutpKZ20pBfrGlBMegTVAFMvOV/iJs8LGKhgI0DeQjywBvHOOO3GsYpTG2lCsyYauzNdtGcnkFRAzAyH25jCTx9qkVahryxjkZcYsWOQ+8aD3LkcnqkRAEYQOPvf33/vMJ9+LJACoCPe391x97U3V1RU2ckfA1qsG22tcJy9gfOQYnPCNhZcg0uCtoMhRLQQiCjOj4MfODKfVQyYHSR96c5hOiKfsQA5HVjoAyeWU0VCW1CJqUytGziUUsgAiRc5FlhAdgNNkXio7jgCCCIqIBaLIRtY55wCEiJQiY4xWCoDZxTj7UwyalJUln2/e/zf/cCWwA2EAAqMq6yqIEJHECQsP/UkGIPdqGdZXGKjEV4yIgCAsYB1yvGwQCIEQFTEBOQGAYbXfwwEvRCcSBIyotBZDKEd7GI6dOPzYmeHsMZjJQSpB7Rnvp0u4oZLfNz8aW+kKERmN6SR2DKj1O2j1LtfWq32DXHxhgijiREQ5xqPgmZWm0EpvT1Zrqa+raqitqaqqIK0y/dm+3v7Oru6enl4kXV6WVgqcO1wPISEiZfqzzka1NeWT5k6uq65MJhP5fKE3k23v6O7s6g0jSZclE752loc4M05q9wrzRAgAAlhwKPzyD2ECBOQgYmZKelCZlpTHRmHksBBJLpBsoCMGT4tRyPLm0V4IYJ2UJ9wlC7TRcu9aOJAVo/Al1q0AK8D3nhIuHE99eZs0fncOrnsce/LQV4Af3+8tnsmnTYWdB9SqnbClVfpySEp76nCd4mnwDRj10nlxrXRPJldd7l/y0Xe+58JzTjpxyojaam0MAIjYbDZo3d++as2WO+97/P5HnslmuaIy6exBckERBaGNgv5zzph38fvfcfopJ40bU59KpeM7CcKgs7N389adDz6y7Na7n9i9t726shwIJR/K1JH8sTMkCl9JzkpYKZ2N5BePYKYA+ujsPwIwoY7Yuggn1MO8CXZSHVWk2NeiAJghYsqG1J5x2/fD+mbsHMCkN3zm8lgTE4gchnD52ZBO2HyBylP6Rw++VLMYIeQjmTXGfn6xywwgaQ1I1z6EOzq5LEks6JxEluvKMZPDgoWEAUUCQDGRMaSREOAD86WuDJXC5Ttw6Q5IeIfV5yAIKd3d23fB4gVX/uvfz5g++RBfigFg0KQXZdWaDd/8zk8eePTZmqoqEQZBpTGbC0bWlX3v21/44Hvefhjlephi6ujovuraG3547Q3GSxgndsZI97nzOIyO3J4phzhnctDCISHkA/Pf91Hf0eEl8fOMHCSNvGeemzch8pUKrQgDCwgIIiIiARuFiF53Hh7fJI9vJiBUNBz9Vsc+chQE9+6TcOk22bRfLZouS7ep0P1J70EANElHhqrLXNMIiSLxte7L253tPmoHAgSgNeZCJAJfFx+6HCH5wBv20Yqd+MxObusDo178Ha1VT+/ARy8678brvlc/otY6J4PARyRElBgmAswMAGNGN1zyoXdFYfDk0rW+b4AoH0Tj6mvuufnHZy46OU4VFLsGEGJsiQCAMAsLl5elF5+18JSTT7j3oafDXIj1FTy3SWwEIsB8+I8wyJH+D0hBSMt3YeCO6oEhAjl2ZT5/5uxozlguhBRGB9dYEdUCzGgdhNYltJs11htdK1v2Q+RoGEoBjrlxRLSi7n9O3neyJiOPPEf9BXjpQj9EEnR3rNKNtVKdcqENLzhJ7+u265oxlQAGACkuXH4pC6uJGAEB1JFUvSLKDASnzJ32i6u+hYjWWa2K9+4cizAUa6mRiIiUiIRR5BmDICKCgCxMyNf//J+nTm2KosgYHafUmNlxMRxDhDg+AIAossZo3/NisKLAER4CHinx9YKrl5e/qpWABZG/WhhNqlO9edaqeH55YaSDCPF6iJx4mgnRSXF1He/wEiHP8DM7ZU8HaK1aetHoo0T6ImCU7i1Et6zAy88BAHZO3r/AtfWpnjwodfjTOaK7joAA9FJBNwLbf/7q5Z5nrHNaaSh233KMhhcQp44RwTPmH75+5VXX/KGurg4Q+3r6P/fJvzht4UlRZI0x8UsTFiKiFx3OzMboB5Y8/aFPfEWUlyCyJJBQQAYQBYDi64zc4ZhTCFoLSrG/hUCcwcEo/KUiAEQbhHxyk5w4FjMFZxQKYEy1GI1GxVECg0BkxTpkkbJkYk0z/+YJYhStRASPd3gBCAh6RrVnQQQ8LS8nGGfBlE+bWuWh9fjuOZgpRA0ViUUz5NYVmFYvZwHjS650IszlCzNnTjz7zIUioknFqEZkAHro0WUbN+8QhJTvz5g64fRT52qtAeAfv/HfV/305vr6emstIfm++vBF7xaRQTghsBDRlq27HntyZRAUlNZjxjScceqcEXW1StEDjzx9yaVfJUoaD8WGUIjU8+0YcRFeAowgDRXi6SGEISH1F7ArG2daQUAUqLwDJ/KS8zRkSCvNnWAlNgggAA5E+Ua19tK2NgktKKTKFDbV2bpy0eStbubfPqmARBMMA7aGjVYVAaNii/JyoCGITEiIjhAAWKGXi3jrPqWOTXcGIeULwfy504zRzjmlYngxC1zx5f/42a9uI2ViJtZonDNrypXf/sJ9Dz/9g6v/UD+iwdoIEcMoGj2qdsb0CYhIJLFNJKTb71ryqc//S182ik0rETaMKP/mVz7b1Dj6kk9+04Lne+gsg69pb6/86GElxdRqbEnh786PGqshtIAILJL09Iqd8PvlkvSJHQCgIBMgEdBL+fWCQJalIsljqsE6KDqCQr7R65rVb5dKEMWdMqwQUp5++4lYV4G/fQolPvNwZUaHB16EEGesCeHFPgcCYrHdFQXEMTrHUQS1ZXD6NClEkPTc5v1m837xvWPTnYHAwmMaGga9b3DMitTqtRuv+81do+obBFhEBIBF1j2368KLv+gc1NbWOhfGzmEU2foR1ZWVZTLoIiOigHz3h/8bWDVyVLmLGAVEINNf+OJXf2CMAQDfQ+ccAqIAE6CoOCop3jgB4wttngCjIk1KUZx2EChGHEfNUwEz+B4njLAUWVxAdAxLNoJlqUg6JwCAIhA6fecaURQHkiz8pqJVEbgQoggjCTMYhUYfVOIiYJmdi/105ylMJ6QmDdUpN69J0h7byAjqp7YVH7wcq4vCQ32k2PZUVVVWVKXaOjvTyaRSSmlShFVVZbGzzy+sdiBSCOoFBglh/Lj6FUs3EAERaq0UUSqVAABrHQCwK9q0uDga4AVOJP4pIkBEDn5TXqYTEP8lHPxK0bgSQnWKt7URAQIKERCC0WIAWFBEQIY1LXqM4YUC7CzNHW9njQNfU8cALt8urb1IJI6BUBIaq1JSm+ZRldBQhfWVtq5MynxllDBLIaSUp54/IFtaMXFMG8sQ+vuzQ+cjIhae2DT2luu/e83Pb9jV3NHR2deXyfTnA2fF80w6nVIKByl7IUWZvoFCIUgmfYlfJQKAXH3lP40ZWbdy7ZYDHX3dvZmBgYEwskQqnU55RjvnjsmVAyIIADNwnNICIEIEYGGEIfUmjtE69LQgoIAACot67wIoS8reTjcQYi7AIELLQkhGy2Ad1JsDXohkbcTvmyfnzog8rYDQsZrXSLesECs8rgYbKmBEha1OYcoXoxgBHINjsM4GFjRJ2qOEL0u3U8iQ0sfq5kVEa9y8dTciqEH2iJBE5KwzFpx1xoIoirq7e9vau3bva9uwcccTS9csX7WpEETllSmxThg8o9vau1va2yeNHxcTqDHR1VBf98Pv/RMA9Pb2H+jobG5t27q9edmKdU8+vbZlf2dFVaUCsCKvvvQMCZk5LIDWkPLjqRxgmXKBY1aej4gADAKgCAby2JeXskp0NjaYaDkq9+HihVSwkA9poAB9eejsV7s6eUeb9OYx4ccVIMMEr2PH2hNCPoTZ48LPnM1RlNiw37Z1ybwJbkQFOkZCUUqEwTI4J1KsKyyyTVpRxNCXU10DtKebH98cZ1uPHe7BOUj4evmjvx43qiGOJYsxK3OszA47ZPnK9f/+/V/ev2RldUWVY6uU6uru/ukPvvrZT74/stZoPQRcZlYvqi1raW3/xfW3XHXtH4iSRqN7ke8cj8PgK84Lx1XjoGsPKd88vYP+sBSTPrAAIoY2ShCcOhlPGCfVaTaEAhg66enXG1vcql2m4MQoEEFCzgX8l3P5gtluIC96MNUrsZOPSAiKiEgIkUV3ZmX5NvXoFhAERcPUgXzMWHtEFGvl3BnR5Hrz3D759RPeuhbo6HNzxgM7sA4cMxFqTVojEgUREAIi+kY9vV39YRkt3U7Lnpft+xUd+0pAY1RnTx/b6J1vXxTXR8QpoDhNMsS2i8RlDjhu7MgPf/Bd3V1dTy5bn0olhBmItm/b+ZGL35VKJqx1SEXCnoqlqk6EmYGZRaSysvycty2cMbXxj3cvEdJ0pNocQZCFE11lEh0XzZ/RqrkbNzQXvVXLPKIcLj3LnjGZq1LWV2SU8xWnDNZXuNnj1MQG2daKuRAVMQoBcmcfnjSe017MwiMMpRUAGdCxWIdhJNbatJFZjaquAjY0x1Unxze8AMFyuGACNtbpNXtwXTOkk1KwdMoU8DUQqYEI9/eZja24cpd6dJNato1njWNfo1F62Q5cv09pA4rQDEsZIAsnE+kVK9dVV5adsmA2IjGzcy4uuYjfw2D7KyGicw4Rzl+86JEnVu7a0+p5xjdmX1vX5m3b/+L8tyV8D0Ws45jVEwAEIqL4cCISEWvtzBlTlKJ7HlyaTicP61x6GfBCcIw1Ze7s6SAMDJgwwECKwCgpRFCIZHSlrkjJ2l2gFTKAJuoPpLWbZo6B8oRYRpaDZHzcZowoSIiEDJgPo8kjlABs3IeeGQ7a/tjBi1CiSI2qkikjXWVC92QxG8gFs+3UEViI9K+fUvc/p5dul/V71a5O7BgAETxtqvMVaqW2tVFLT3FIxPBoaUEEFG0Sd9339N59+6ZMHj+irrqIiKIUyfp4zRMRO6eUqq6u+L9bH0gmfMecSqbXb9yx5JGlo0aNmNA0Rmt96OHMzCJx5i7WaiIye9bU2+54uKcvp1+YGzg6vERAK+nMyOYWnDvB9If6j6tp6Xa9eg/2FbBxBBBIaLm+Um9qlb4cxekNo6i9Dza1UHmSaso57YunkKg4So0FZDA9SoCIGFkYVU3P7YNsiETHtfZihdjZLyeM4ZHlPHMsnDLZTqtXnqFHttBjWygu4dMafQ2kJKnllEnsa9KK1u7FzfuRCIQRSYYhuYrFogb2k2b5ii3/d8v9S1eubW090NfXH4SBIvJ9TymFiEO1DzFq6uuqb7x9SSab1wqZXTqZ2NPacdNtDz/w0NM79zR3dffmc3kG8TxjjKEXHs4iSd9fu2HLytVbUin/0ATGy4AXgIAyBnpyuLMDV+2CDfuoNyedA7h+r4yskgl1EFhMGtzRrpt7iuy/AGqNmQKs2a02tWJ7n+7NUz4CFo0kCU88TZbjGbVMAE4onaSWHtjTKZ4+5grsmEWOIoJKqe68u/5x7z0Lwgm1XO6rTKCXb+QHn8Oy5EFGh2VQSwkgSuhgXpMzGjv7qSPDmTy6Yem/REAQECc1NWVRZO994Jk7733KaJ1KJasr0nW1VSfOGPe1L39uYtPYGCIxSmqqKxvHNrS2dfomKcLWufJUUgTWbNix/NktRJD0dXlF2YjaqtEjR3z20+97zzvPERYkLHpziCdMn8TMr27ehANRCZ+3H2BkTBiQmGMXau5yp08qhghJc2j9ZJxkJADZ34fN3YBARpFvIO1TZUpOnWznNVJkB5PYwgTcUElDadDjlpggFpfQqqVPfr7EH12NCSNdA64z42nPqSOUkBbpQ2ujyfUwYzSFNgoi094Pv3kS+15W9dyrC0GCIPJ9U1WZFiQWELadvf0HugdWLFvf1T1w+40/GkruMjMR1VaVs3OABMBEFEVOKVVeliovYwFkB7lctLO/7bnNu5ateG7FYxOmTGhiljg4RcTauirEV2XzEYA54gjnN8K0Ma4iwShKhJmxrkLiePPFsEUEZiAEX5OnSYBFMHRSyEp7Bncd0A0VdmxV8XBAEeG0r+G4r5goWnejUQT3dqMTNqQSvhU59NoFQAGwoDKeS3sYMbPDfCESQE3R9JHeggnu/vXKJJCPZaIVAZEwX8jXV1c1t3Wk0+WeJwoFlNbaKIWoRuze287MikgOiaWUEgREYdKUzxaqK8v7Mv1WJJ1OEYBWojQhqrLKVEdrX3PrgSkTm4Dj7BECgHp1igsBWEQDXLzIzZvoiEEElOL4tKGFIBpar/G/JMAKMbQuaSiwFAonNCMwFMNc7Xsum8ferG2qobCorlCOwMscx0mhOJjyNMd8HcshaYois28VqkLkbljqj66yo6tUXQVWl7ky37mIcwVeOImW7sC8ZXXMqpAQQGn/QEfbZz/5nq9/+fLvX339jbc+0tXdIzHDjQhCLipcdMVFiihWWlCM6KGrJ6OQlFE9vQNNY+vuuPEHa9du/s73rnt+z/4ossVADMQG+XPOWjB/zglDxjGek97Z1ftKa10QwBFiIYJ3zXWnTHaZLGoF1umeHCCQE1vmc8qHIXZQAAWsRhVYW+7Tp891B/rkwfWqI8NOlKAgCgpH1k2ul/F1KrA4qK6YEAYKMjwR1bA1or1QY704bwYMtHm/bGxRhOgb8DXMn6gunOMKoWuolPlNsGQzpA95gq8xhNH6QGfbZR99109/8HUiuuq7X/3iFZ9Y9sz6jZt3d/X0OOdqqirOPnPuOxafKeKoWLEjANDe0b19Z2s6nejryzaNqb3zxqumTh4/ffKEC9959rIV69es37Jv/4FCrpBM+ydOn/yh972joqzsEO8eEHH1uq106PiMlxfnqsjZ8oTMHs+5AimFPXnvt0/hgX5rFGQDOmeGvGceD+QP2g1CVYiiCh8uPztqrJbx1TBzDO48IC1d0JuFwIpnYGSVzG3itAfWDS13xUL7uoeJ93oD+hzjaidBAN8UF7kIDAT4xBY+ebwbXanCiBZOlmU7lGV5rbeNAKAUHjjQcelH3v2LH/8rADjHgNA4dnTj2NFHCFCwSOo657TWdz/wRFt7pzHJUaMq7rzpR1MnjbfOImI6nTrvnFPPO+fUI50Bh/y2/W0djz2+Mp1O8SscNiHMVO5HKQ8cc9pPLN0Bm/dLbbkOhLOhIrKHVoARcmhthYeXncONNS4fICIYimaNgTlj4y40BGICCCK0DhAYAVnQKNU14La3eZ7mYVBgb+imLyLCIiwgAAlDgcWlW5XRNrLRmGqcP0liZv813iFRpj/715d94Lqf/ptlKwBKkSJiEeectc455xxb65w7GN85x1rr7r7MD6++gZSa0lT/2J2/mjppvLWRVlqREhHnuHi0Y+ecdW4IWyLimBHxP7//y5aOLs/Tr+jdCYAC5MihdYCIgXOTR7hxVRKEEoY8qc7ObypWicVOpWWpTqrPnucaq1wuQCKIo4l8CAOB5EIpRC4fQDYAV6y/QQZkwYTBRzf63Tl31H7BN4v2OpItAGXFegqnjHLMKAIKMenhMQpniKi/v9A/kCsvSznnnEMiJERQ6rAiYxEQZhbWWgdBeNnn/3X77tZUKhFa19XTM25sg9LKWktEiKTUi9anQNziobUyWv/supt+8et7ayqrX2IgAL7wg7gUjEGcIezNqfaMnVpP2cCNqtJ/e77b3yeaYHSVSxocKhsEBAAScYWAtULl0LEQAuKhDCLhYHqBhUFAEZSl9JKN8NQ2TnnAw+J8HRebvqBSnC/A4pn2vJk4EKhUQm1qhltXgWdeQTJ/MOlx2HsUEd/zVqzeuOTRpdOmjG8aPyZm2lnEMTthiceDsUhc50JIRJu27vjkZ7724KOrqyrLCaGzK3PDTfeVJZNzZk81xhRZfmZ2UpwuxiwiSPHRNDCQ+7fv/vKf//OX6XTqxXRS7OcLAiyY4CoSEA+XEwFPYXMPPddMWgMihA5yAc2byAo4cuxrHlkhNSlIaHQcszqotX6uBVq6wTp4dpdCwnG1rtwnQBHBuE1BDl6CIIrRKuGrglP3rIX71yttBIeHljgu4EUIuYJMaYg+choWIva16g/o+qcoF5HCQ5be0ayk5WJ5Dxw+w1dEUmWJffu7b7z5/vWbtntGV1eVlaXTRKToEEHM5/PPrt30/Z/87kvfuGrLzrbqikrnIhHwPOOE77j/iSVLlkdhoaqqvKKiXKsXHE1EKLBz974b/u+eK778/VvvfayiogyP2B80uHsInT6Va9MkgEohESY81dwD6/eKr5EFtcL9vdKVobF1Kp0QT5MAIult7WpDi0wbhSyU8GljC+3qgKRPjLhhn9rcSgWLvqcSRhImZr/Q06Q1GEVOdFeOVuykW1bgur2+9q1CehMU5BzVw8aDlb8iEvcaxEPhuNLnz55r68skdEorc93jsGE/JTxwwgqJWQohaAWeBgD8E2qc69KgSAhVpoD9wWGkhgAoBcyU6c8S8OhRdRObRo8f11BXW+N7BhDy+aC5pW3b9uYdu1ryhbC8Im2UYuuYCAfT3qgoO1AIg6Cmtnzi+NETGkePbKhLphKaMLKuo6Nr+/MtW3fs7erq85OJVMofmgBwRH+ABHhctfj6YCuUIurNy4EMDV47IkohlHJfxtVCVUoQVHdOdh4QX2NjrVgHWmF7BnrzQKr4jKNIrJOUh7UpqSmH8iR5ShSJY84WVMcAdPRDfwG1Ak+LxOUib2Z4ESJY5yILWhGzMEDSFOuDESWMaHJD9PnFkYuIgZTSt62AJ7dDOqkYXSHApLZzxtPeLmrpRkFOFlN7B59JPEbgisXRqCoyiu5bj/esx5R/xGpEpQgAgzAKg9BayxIX2QMiKkWe5yV8j4iGBpi8yI1DRLLWBUEYRZHjYtEEAiCRZ7Sf8I3WIswvpxYytC98swKKDh9iQAiWB1vWBJAgRmRoi6lLreSQfDkRCYJYBucgrumQgxkLIAJT7Ml+HXaZGH7XHpFtxBVJOG0WjKmOLNOmfbRqNyqK88zoG966H29Ypj5yuoSRY+aLTvVCB8uet1rh1JH2wjk8sZ77C2ZLK6/ZQ9vaXK5AnoGhicsIxGARLIGOp4//6efmHAOA0cozqRcMXxKI+xbjiPJPHc4sAI4IUikfMTFYFT0YFoiI8CuogfbNizJlL3rrLKAQtHnBFwghng0xmFs7JOUViojve0IavBe5FFIM2F8fx0cPu020jmvSfPk53FjHipRjt6BJmurolhWktAAAC6V8WL4DkoY/uIDzAYQu+qtTlQiOqrbnzmQUHsihomheE85rcq09es0eeXY39eVlEGEyOBxgcFCCvHQXiAwqrVedmJBjYlNeRofwkTF3JN1DSPkgbBxdq43au6/zeBh4PryuPSJiYN0HF9jZY7C1x7tvPbb32oZyNaEB9vVASw96Om6KIc/Q1nYRtrPHcRgpQZ4z3k6ulzASx5BOkFYSRtZarEjiSRMk6cGaXUprHlQffOpEKU+AUrS9A7a3DVNZ4nErhBiEdvSoqlWP/z6ZTt16xyPlZSl+o7ds0MOqupgZKhLUWAeRM3evgWU7xSff08FZ0/0pI3HNHhjMxQoIl/t0/0Yv4bl3zHTZAEMBZkz5ZNk8tMEhyMkTqCwhQRRCTo+spITnYlafBVIepHwQJkAV2dcSZsdTpQdr8FGEBPgwVUHFeTIIIIf2qyHGDdLFOB8JBxvaitUTMds55O0d8qsAFCsQB+dC4OCHQz3cNKh4GZEAUfigBiWkfBBccN6iXD78n/+9NZny+TgYGzyM8MKYcyEURGKAXCCEGAkEDhCAaKixPX4fygknPbxrjUl49syprhBSOkk72umutbKjTQHKQ5vk/Fn2bdMwirAyLdVp6hwArcFGUJOC8qQ4RidwIFPspH6FZlwQQLCQKzDYhJ9UmnK5AMQq7RmP0KnBNCplMv2atAiDUulEgsXFaLEOC8EAoWKxBGQj0T6lE2UsESDZwFoJtfaVVgBgrUS2gAp94yMIs+ofGEAAVApBxLGI8xNprVEEmTkqFByI5ymt/TAILYe+SZEqAoxFPE2/+/29v/vDfT392eqqKpY3fub5MCaFJK4/7w+kow+MCi+ciyc34QWzw7mNEDnY03kYcSAACKKNgVtW0KrdCpS+bZW55mHY1aGSSUwlKBPgql3ITI5d2nB1SvqyUgi4P8c1KfAMAGDeSueAvKrpAQgYheHPf/TVm3/9H8ZQT2//BWfNf+Len33tHz+ZzQSoi+beRuG/fe3yp+6/9sE7fnzuonkD+WxcEm0dV5R5N13/70/dd+3Kx/536cO/vOF//mXB7GnZfF4b09+f+dQn3v3InT+ZMXlMEERRaCeOr3/kzqv/5rIPDPTngbRR0S2/+Y/VT/z20bt/+vCd1zzz6PXLH/3NlAmjgiBi5pqa9F03//f9t1w1tqGuv7vvovees+SOa0Y1VIShjQuvB/L5885cePuNVz5w+1Xf/dbnoqBwPGyYNZzGMe58B1D3r8PxdXbSyOizDZbAIKnVu3ntLp3wDg9hBBwhIcmtK80Dz3FrtyR8Q+RYAAUSGgbymCm4co+chbOmyfg68Q0GEUwc4ZwFraQvC305UPRKWwsFRYAI4cxF88aOqmXrJjeN+eVPvllZWfmlb1ytjQIhIs7lCrNmTPzKFz5VKBQSicQ3/5955PGVAITIUehGjqj6y3eeY120YeOO6urqD77vhDPPmHfa4k/1DeSYkUUWzp9z7tsWrlq/A5HedtrsU+bPueOeJ52NAIVRkdLORSfPnq613rJ1Z2AtKQIA61xVefk5ZywAwEs/fuGX//bfZ8+cctrCuXU1Fbv3dKCPAIDC3/ynS+fPm1UIC/Pnzb7lj49s3LonlUy8sSZyeFPayAKehr3dcO0Sb+nz0Nztbe+gu9fQb5cqd+T+c2QRrSiwcCCjkgkAcMDF9nki7Ctg5wBq7ayz00ZF7zrJnjsjetdJdlI9BBYVQXcG85HQKw6aUAhBBCGby3Z19xG6X/30WzU11R/+9Fcee3ptKp1kdkiUD8P5805glg9f/rXb7np43pzpDaNqwjCKHanQWuf4ptsfnLvor2Ys/NBPfnlTw4i6ObOmZQfyqWTiqaVrmfnkeTOUQkA4ed4JIvLEU6uNb5DRRfKhj31l1mmXLF/1nGN3/geumHvGJdt2tiYTXtwfN5DNAsAnLrmwYuzInv6BOKEeX3cQRqNG1s2ZPe3mOx762GXfYpaT555QKESE9GdrHIdib/J8va9PfvOUufpB/ZOH9J1r0DrR6k864HGp6IsHgyGAddTWh0QACKHlMGLrOLKMCJ6GhKED/Wgd0Kuf46hJWxt+91/+btHCk/7529fceufTI0bUDI1XJYEzTj2JCNet2772uW3GeCdMayoUCsUt2BCUIusYmPLd3Rs2Pc/MvjGO2fe93c2tre0dC08+MZX2k545ZeFJXT19O3e3JhK+sEOEsrKyVFm50UYRlaXS5eXlSsUzdUBAEonE+o3bRtTWfOTiC/oHckoVbxKJgkIwc/oErb21G7atfW4LES46ZTagG3xqf8bwioMdT5PvQ+SQQVI+E9JRg+YjfU4M0NoT9xYiou4c8Fr7TEuvae7We7vN7k61swNew5IlxCCIRjaMvPTjHwCAlv1dMDRCkMBarixLLjp1zu69LTs3bnv0yTUicurC2ZGN4k7VeGzOmJENZ501/30Xv+szl76fiNq7urUmpVRvJrdsxbqxY0aOHFE7oq5iyoTGZ1au6+rJGG2Kw2uYwRUd0ZhxByiaNseslb73gadXrFr/xb/+cF1V2RB0EDGyfOrC2SLy2JPP7tjwfHPL/jNOm1telrDuDfbuX4+CnJgPj33neF+UV9mUIgBKcVsvFhwikFF431pc10K+AcfFUTSC4Gt0r57wcc4h4rrntlZWpH/wX1965tkNO5s7U0kPgHNBeMKUsePGNuxrab/qmm/V1dYg4ukLZnueYRBAibsjF5+1cPFZC+Oz/f6m+1au3ZJOpeL276eWrv3gX75j8vix2aCAiE8vXeuKTUQCQIIgGJfnIgqi6EOSCgIA+SC68se/vfk3V37gvecVE1wILOJ75rQFsxDx85/+4EXvW6yJxo1pmNg0Zuv21lTSZ5Y/a+11JJy8SjVoiDoHVCYvRE6Tqq8myxjP3gVCUK+xqFcEkKRQKHzs8m/8zRe/W1GW/tF/fYmjHDNopEIQzJ09zTmurqr4289e/P73nh1ZO3PapIbaKhs6QHHMIrB85ZpLPvqFX//uNgG5/8GnBvrzShGzeJ6/avUWRDh94czTF54IAM88u8kYwxzPmMCwUIgC62xknQvDMAizlodoY3DOlZWn7rz78Z27mqdMHG+tjdtNwtA21FfMnDExsvYD71l8xWcuKq8sd86dNHNqGIRIf/bG8RiikggHAtedQU3gxI2tFqOOiXshcRszcHVNjVaqs3vg3iWrfvY/N5571in/+vXP9Gf7QSkUPm/xqUqpj1z2lYYp7xwz6YJb73ho5Mi6ObMn5/KhAqUAtdbNrR03/v6eb/77/xRy4X995wv1teVR5EAkkfS279rT1t7xT1+6/Ntfv6K7p2/Ljt3JhCeCTlAbvvvmH+5cd9uiU+dppZ+8/1dbVt0+ffLYfCGIqQelVGVZKuzp/8WvbwcArbUhRUi5QmHuiVPq62pvuu2+0ZPfPnLKOz/6ma8qpc5bfCqLvLG+13FRTvgKQKAQA4uN1TyhXqwjRFy6FRlBv+YZLygA5JxtbBy5a3fLPQ89abT39DOrx46tr66pefixZ9hFgDJ/3syuzp5rf3V7IbS5QmEgmxtVX7Vs1aZde/b7RpHG6VMan16+fv2Olnw+6BvoHVFb+cTSNV09GaWVIpXN5ve1tpeXp/bs2ff9a363cvXWRMIH4Xjk/KJTZpPCbTv27Nq1L5sd6MsM3HPfU129/VppAZkxddxDj63YuGPf7pa2xnENe5tbb71rSTYfOuZJTaMb6ip+dt0fNz+/j0h3tPdNnzxud3PbE8vWGK3ewMzQ676f42tKMoEolP7AnTbeffxtnA0IwVu6Ax7dAgNBcS7Da/0TmMvmGCSVShOhE5frzxJRKp2OhzMUsjnLLl2WJgIECoIgiPK+SXmeFkFmzOUzWnnJpAeAuVzeOleWStNQ5h1VNpdjjkAQlSlLJaU4mwkFeGAgWyTfAOPy2XQqabQWEWHI5geM9hMJ37HNZguInEqUk0ZEDgMbRDnflPm+EXDMkhvIKjKJdBKGs5zrzwpeReeIIPrE6e6EMUgKkViDt6ebr39MdeZA69c+CY2IAEEcxzPICJUAM7vBrdoJkZgdSPE3IBQWifNCgKgwLtiPU5Yw9OXBGyBSiHGBPL9gw0eEuN710NVUrNGOXX2KccaIQKQkHvoUF2UiYXwZMf+MQKTgkHRnyTi+jKVAyEHI55zA587EfOSt3E1bWqEqHY2p0ukkrtmtSTl8rY/zsFodkbhgcLAX+NAN+Yq/yaH9IHLIkJ8j7d6HclAOJ6XkRXLYgYec+bBPBy8DDz0VvOEbSuo3k+ZiIK142mhB1Mt3yM0rdMTY1uM+ukia6qWmzPXlUb2pgpU/d3lzvQwRTc5XgoD7+5QDl/Bxfz85dgZRKxDAt/wGsCV4vXpOHQoRHuhHFnfmVJ7WACNS7vxZYpTqzUFfjhWhSOmlHj+i32SrgUie2oKzxoZNNepzi5klKtdEpB7fCvlQJ3wuwet4kjcV7yUARmFnFvZ16RFVYVVSjPK6cnTnGli+g3xPStg63qKxNxcxwQiEiIWIE0pGVokmOpCRvoL2PYYStkrG8TUaRwEQ4YRBFtzTJQJglPF9i4IldJXgdWxUblwC4Jl4GI0FLmGrBK9jT1MU0VZ6jSVioiQleJWkJCV4laQEr5KUpASvkpTgVZISvEpSkhK8SlKCV0lK8CpJSUrwKkkJXiUpwaskJSnBqyQleJWkBK+SlOS1yP8HHIrMmIzJBgIAAAAASUVORK5CYII=" alt="SŠTaS Karviná" style="height:110px;width:auto;">
+      <h1><span class="navy">Silový </span><span class="teal">čtyřboj</span><span class="zs">pro ZŠ</span></h1>
+      <div class="divider"></div>
+
+      <p>Systém pro rozhodčí</p>
+    </div>
+    <div class="auth-card">
+      <h2>Přihlášení</h2>
+      <p>Přihlaste se pomocí školního<br>Office 365 účtu</p>
+      <button class="auth-btn" onclick="typeof signIn === 'function' ? signIn() : showToast('Aplikace se načítá, zkuste znovu', true)">🔐 Přihlásit se</button>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="screen" id="scr-menu">
+    <div class="menu-logo" style="margin-bottom:36px; padding-top:40px;">
+      <img class="sstas-logo-svg" src="data:image/png;base64,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" alt="SŠTaS Karviná" style="height:110px;width:auto;">
+      <h1><span class="navy">Silový </span><span class="teal">čtyřboj</span><span class="zs">pro ZŠ</span></h1>
+      <div class="divider"></div>
+
+      <p>Systém pro rozhodčí</p>
+    </div>
+    <div class="menu-btns">
+      <button class="big-btn btn-chlapci" onclick="showScreen('scr-chlapci')">
+        <span class="btn-icon">👦</span>
+        <span class="btn-text">
+          <span class="btn-label">Chlapci</span>
+          <span class="btn-sub">4 disciplíny</span>
+        </span>
+      </button>
+      <button class="big-btn btn-divky" onclick="showScreen('scr-divky')">
+        <span class="btn-icon">👧</span>
+        <span class="btn-text">
+          <span class="btn-label">Dívky</span>
+          <span class="btn-sub">4 disciplíny</span>
+        </span>
+      </button>
+      <div class="separator"></div>
+      <button id="btn-prepocet" class="big-btn" style="background:linear-gradient(135deg,var(--sstas-teal-dark),var(--sstas-teal));display:none" onclick="spustitPrepocet()">
+        <span class="btn-icon">🏆</span>
+        <span class="btn-text">
+          <span class="btn-label">Přepočítat pořadí</span>
+          <span class="btn-sub">Pouze administrátor</span>
+        </span>
+      </button>
+      <button id="btn-ulozit-zavod" class="big-btn" style="background:linear-gradient(135deg,var(--sstas-teal-dark),var(--sstas-teal));display:none" onclick="ulozitZavod()">
+        <span class="btn-icon">💾</span>
+        <span class="btn-text">
+          <span class="btn-label">Uložit závod</span>
+          <span class="btn-sub">Archivovat výsledky do Teams</span>
+        </span>
+      </button>
+      <button id="btn-reset" class="big-btn" style="background:linear-gradient(135deg,#7a0010,#c8102e);display:none" onclick="resetZavodu()">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-text">
+          <span class="btn-label">Reset závodu</span>
+          <span class="btn-sub">Vymazat data — připravit nový závod</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CHLAPCI MENU -->
+  <div class="screen" id="scr-chlapci" style="background: linear-gradient(160deg, var(--sstas-navy), var(--sstas-navy-dark));">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-menu')">←</button>
+      <div class="screen-title">Chlapci<small>Vyber disciplínu</small></div>
+    </div>
+    <div class="menu-btns">
+      <button class="big-btn btn-kliky" onclick="showScreen('scr-kliky')">
+        <span class="btn-icon">🏋️</span>
+        <span class="btn-text">
+          <span class="btn-label">Kliky</span>
+          <span class="btn-sub">1 pokus · opakování = body</span>
+        </span>
+      </button>
+      <button class="big-btn btn-trojskok" onclick="showDisciplina('scr-trojskok','CH')">
+        <span class="btn-icon">🦘</span>
+        <span class="btn-text">
+          <span class="btn-label">Trojskok</span>
+          <span class="btn-sub">3 pokusy · nejlepší cm → body</span>
+        </span>
+      </button>
+      <button class="big-btn btn-shyby" onclick="showScreen('scr-shyby')">
+        <span class="btn-icon">💪</span>
+        <span class="btn-text">
+          <span class="btn-label">Shyby</span>
+          <span class="btn-sub">1 pokus · opakování × 3 = body</span>
+        </span>
+      </button>
+      <button class="big-btn btn-prednosy" onclick="showScreen('scr-prednosy')">
+        <span class="btn-icon">⬆️</span>
+        <span class="btn-text">
+          <span class="btn-label">Přednosy</span>
+          <span class="btn-sub">1 pokus · opakování × 1,5 = body</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- DÍVKY MENU -->
+  <div class="screen" id="scr-divky" style="background: linear-gradient(160deg, #1a1e3d, var(--sstas-navy-dark));">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-menu')">←</button>
+      <div class="screen-title">Dívky<small>Vyber disciplínu</small></div>
+    </div>
+    <div class="menu-btns">
+      <button class="big-btn btn-trojskok" onclick="showDisciplina('scr-trojskok','D')">
+        <span class="btn-icon">🦘</span>
+        <span class="btn-text">
+          <span class="btn-label">Trojskok</span>
+          <span class="btn-sub">3 pokusy · nejlepší cm → body</span>
+        </span>
+      </button>
+      <button class="big-btn btn-splh" onclick="showScreen('scr-splh')">
+        <span class="btn-icon">🧗</span>
+        <span class="btn-text">
+          <span class="btn-label">Šplh na tyči</span>
+          <span class="btn-sub">2 pokusy · nejlepší čas → body</span>
+        </span>
+      </button>
+      <button class="big-btn btn-hod" onclick="showScreen('scr-hod')">
+        <span class="btn-icon">🏐</span>
+        <span class="btn-text">
+          <span class="btn-label">Hod míčem</span>
+          <span class="btn-sub">3 pokusy · nejlepší cm → body</span>
+        </span>
+      </button>
+      <button class="big-btn btn-lehysedy" onclick="showScreen('scr-lehysedy')">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-text">
+          <span class="btn-label">Lehy-sedy</span>
+          <span class="btn-sub">1 pokus · opakování = body</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KLIKY -->
+  <div class="screen" id="scr-kliky">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-chlapci')">←</button>
+      <div class="screen-title">🏋️ Kliky<small>1 pokus · opakování = body</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Číslo závodníka</label>
+      <input class="form-input" type="number" id="kliky-cislo" placeholder="1 – 99" min="1" max="99" oninput="lookupZavodnik('kliky')">
+    </div>
+    <div class="info-card" id="kliky-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodníka</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Počet opakování (0 = neplatný pokus)</label>
+      <input class="form-input" type="number" id="kliky-opakovani" placeholder="počet opakování" min="0" max="200">
+    </div>
+    <button class="submit-btn green" onclick="submitKliky()">✅ Odeslat výsledek</button>
+  </div>
+
+  <!-- TROJSKOK (sdílený pro chlapce i dívky) -->
+  <div class="screen" id="scr-trojskok">
+    <div class="screen-header">
+      <button class="back-btn" id="trojskok-back" onclick="showScreen('scr-chlapci')">←</button>
+      <div class="screen-title">🦘 Trojskok<small id="trojskok-subtitle">3 pokusy · nejlepší cm</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="trojskok-cislo-label">Číslo závodníka</label>
+      <input class="form-input" type="number" id="trojskok-cislo" placeholder="číslo závodníka" oninput="lookupZavodnik('trojskok')">
+    </div>
+    <div class="info-card" id="trojskok-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodníka</div>
+    </div>
+    <label class="form-label">Výkony v cm (0 = neplatný pokus)</label>
+    <div class="pokus-row">
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 1</label>
+        <input class="form-input" type="number" id="trojskok-p1" placeholder="cm" min="0">
+      </div>
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 2</label>
+        <input class="form-input" type="number" id="trojskok-p2" placeholder="cm" min="0">
+      </div>
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 3</label>
+        <input class="form-input" type="number" id="trojskok-p3" placeholder="cm" min="0">
+      </div>
+    </div>
+    <button class="submit-btn green" onclick="submitTrojskok()">✅ Odeslat výsledek</button>
+  </div>
+
+  <!-- SHYBY -->
+  <div class="screen" id="scr-shyby">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-chlapci')">←</button>
+      <div class="screen-title">💪 Shyby<small>1 pokus · opakování × 3</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Číslo závodníka</label>
+      <input class="form-input" type="number" id="shyby-cislo" placeholder="1 – 99" min="1" max="99" oninput="lookupZavodnik('shyby')">
+    </div>
+    <div class="info-card" id="shyby-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodníka</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Počet opakování (0 = neplatný pokus)</label>
+      <input class="form-input" type="number" id="shyby-opakovani" placeholder="počet opakování" min="0" max="200">
+    </div>
+    <button class="submit-btn green" onclick="submitShyby()">✅ Odeslat výsledek</button>
+  </div>
+
+  <!-- PŘEDNOSY -->
+  <div class="screen" id="scr-prednosy">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-chlapci')">←</button>
+      <div class="screen-title">⬆️ Přednosy<small>1 pokus · opakování × 1,5</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Číslo závodníka</label>
+      <input class="form-input" type="number" id="prednosy-cislo" placeholder="1 – 99" min="1" max="99" oninput="lookupZavodnik('prednosy')">
+    </div>
+    <div class="info-card" id="prednosy-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodníka</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Počet opakování (0 = neplatný pokus)</label>
+      <input class="form-input" type="number" id="prednosy-opakovani" placeholder="počet opakování" min="0" max="200">
+    </div>
+    <button class="submit-btn green" onclick="submitPrednosy()">✅ Odeslat výsledek</button>
+  </div>
+
+  <!-- ŠPLH -->
+  <div class="screen" id="scr-splh">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-divky')">←</button>
+      <div class="screen-title">🧗 Šplh na tyči<small>2 pokusy · nejlepší čas</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Číslo závodnice</label>
+      <input class="form-input" type="number" id="splh-cislo" placeholder="101 – 199" min="101" max="199" oninput="lookupZavodnik('splh')">
+    </div>
+    <div class="info-card" id="splh-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodnice</div>
+    </div>
+    <label class="form-label">Časy v sekundách (0 = neplatný pokus)</label>
+    <div class="pokus-row">
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 1 (s)</label>
+        <input class="form-input" type="number" id="splh-p1" placeholder="s" min="0" step="0.1">
+      </div>
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 2 (s)</label>
+        <input class="form-input" type="number" id="splh-p2" placeholder="s" min="0" step="0.1">
+      </div>
+    </div>
+    <button class="submit-btn green" onclick="submitSplh()">✅ Odeslat výsledek</button>
+  </div>
+
+  <!-- HOD MÍČEM -->
+  <div class="screen" id="scr-hod">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-divky')">←</button>
+      <div class="screen-title">🏐 Hod míčem<small>3 pokusy · nejlepší cm</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Číslo závodnice</label>
+      <input class="form-input" type="number" id="hod-cislo" placeholder="101 – 199" min="101" max="199" oninput="lookupZavodnik('hod')">
+    </div>
+    <div class="info-card" id="hod-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodnice</div>
+    </div>
+    <label class="form-label">Výkony v cm (0 = neplatný pokus)</label>
+    <div class="pokus-row">
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 1</label>
+        <input class="form-input" type="number" id="hod-p1" placeholder="cm" min="0">
+      </div>
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 2</label>
+        <input class="form-input" type="number" id="hod-p2" placeholder="cm" min="0">
+      </div>
+      <div class="pokus-group">
+        <label class="form-label" style="text-align:center">Pokus 3</label>
+        <input class="form-input" type="number" id="hod-p3" placeholder="cm" min="0">
+      </div>
+    </div>
+    <button class="submit-btn green" onclick="submitHod()">✅ Odeslat výsledek</button>
+  </div>
+
+  <!-- LEHY-SEDY -->
+  <div class="screen" id="scr-lehysedy">
+    <div class="screen-header">
+      <button class="back-btn" onclick="showScreen('scr-divky')">←</button>
+      <div class="screen-title">🔄 Lehy-sedy<small>1 pokus · 60 sekund</small></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Číslo závodnice</label>
+      <input class="form-input" type="number" id="lehysedy-cislo" placeholder="101 – 199" min="101" max="199" oninput="lookupZavodnik('lehysedy')">
+    </div>
+    <div class="info-card" id="lehysedy-jmeno-card">
+      <div class="info-sub">Zadejte číslo závodnice</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Počet opakování za 60 sekund</label>
+      <input class="form-input" type="number" id="lehysedy-opakovani" placeholder="počet opakování" min="0" max="200">
+    </div>
+    <button class="submit-btn green" onclick="submitLehySedy()">✅ Odeslat výsledek</button>
+  </div>
+
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Ukládám...</div>
+</div>
+
+<script>
+// =====================================================================
+// KONFIGURACE — UPRAVTE TYTO HODNOTY
+// =====================================================================
+const CONFIG = {
+  clientId: '230502bf-192e-424a-896f-8776e7e35f73',
+  tenantId: 'b2966efc-a02b-4dcd-9475-4f816ddca8e2',
+  // shareId souboru Silovy_ctyryboj_ZS_DATA.xlsx (sdílený odkaz z Teams)
+  shareId: 'u!aHR0cHM6Ly9zc3Rhc2thLnNoYXJlcG9pbnQuY29tLzp4Oi9zL1NpbG92eTRib2ovY1Fyb3YtZ2h3M0dYUXIwNXd1NUltdWxjRWdVQzJkeG84cEJzMzh3U1Qzak92ell3U3c',
+  ownerEmail: 'ppolednik@sstas-karvina.cz',
+  scopes: ['Files.ReadWrite', 'User.Read']
+};
+
+// Názvy tabulek v datovém souboru
+const TBL_CHLAPCI = 'VysledkyChlapci';
+const TBL_DIVKY = 'VysledkyDivky';
+
+// Sloupce (indexy) pro součet bodů, celkem a pořadí
+const SLOUPCE = {
+  [TBL_CHLAPCI]: { body: [5, 9, 11, 13], celkem: 14, poradi: 15 },   // KL_Body, TS_Body, SH_Body, PR_Body
+  [TBL_DIVKY]:   { body: [7, 10, 14, 15], celkem: 16, poradi: 17 }   // TS_Body, SP_Body, HM_Body, LS_Opakovani
+};
+
+// =====================================================================
+// BODOVACI TABULKY (zdroj: bodovací tabulky ZŠ 2026)
+// =====================================================================
+const TROJSKOK_CHLAPCI = {
+  350:0,360:1,370:2,380:3,390:4,400:5,410:6,420:7,430:8,440:9,
+  450:10,460:11,470:12,480:13,490:14,500:15,510:16,520:17,530:18,540:19,
+  550:20,560:21,570:22,580:23,590:24,600:25,610:26,620:27,630:28,640:29,
+  650:30,660:31,670:32,680:33,690:34,700:35,710:37,720:39,730:41,740:43,
+  750:45,760:47,770:49,780:51,790:53,800:55,810:57,820:59,830:61,840:63,
+  850:65,860:67,870:69,880:71,890:73,900:75,910:77,920:79,930:81,940:83,
+  950:85,960:87,970:89,980:91,990:93,1000:95,1010:97,1020:99,1030:101,1040:103,
+  1050:105,1060:107
+};
+
+const TROJSKOK_DIVKY = {
+  375:0,380:1,390:3,400:5,410:7,420:9,430:11,440:13,450:15,460:17,
+  470:19,480:21,490:23,500:25,510:27,520:29,530:31,540:33,550:35,560:37,
+  570:39,580:41,590:43,600:45,610:47,620:49,630:51,640:53,650:55,660:57,
+  670:59,680:61,690:63,700:65,710:67,720:69,730:71,740:73,750:75,760:77,
+  770:79,780:81,790:83,800:85,810:87,820:89,830:91,840:93,850:95,860:97,
+  870:99
+};
+
+const SPLH_DIVKY = {
+  11.1:0,11.0:1,10.9:2,10.8:3,10.7:4,10.6:5,10.5:6,10.4:7,10.3:8,10.2:9,
+  10.1:10,10.0:11,9.9:12,9.8:13,9.7:14,9.6:15,9.5:16,9.4:17,9.3:18,9.2:19,
+  9.1:20,9.0:21,8.9:20,8.8:21,8.7:22,8.6:23,8.5:24,8.4:25,8.3:26,8.2:27,
+  8.1:28,8.0:29,7.9:30,7.8:31,7.7:32,7.6:33,7.5:34,7.4:35,7.3:36,7.2:37,
+  7.1:38,7.0:39,6.9:40,6.8:41,6.7:42,6.6:43,6.5:44,6.4:45,6.3:46,6.2:47,
+  6.1:48,6.0:49,5.9:50,5.8:51,5.7:52,5.6:53,5.5:54,5.4:55,5.3:56,5.2:57,
+  5.1:58,5.0:59,4.9:60,4.8:61,4.7:64,4.6:65,4.5:66,4.4:67,4.3:68,4.2:69,
+  4.1:70,4.0:71,3.9:72,3.8:73,3.7:74,3.6:75,3.5:76,3.4:77,3.3:78,3.2:79,
+  3.1:80,3.0:81,2.9:82,2.8:83
+};
+
+const HOD_MICEM_DIVKY = {
+  400:0,410:1,420:2,430:3,440:4,450:5,460:6,470:7,480:8,490:9,
+  500:10,510:11,520:12,530:13,540:14,550:15,560:16,570:17,580:18,590:19,
+  600:20,610:21,620:22,630:23,640:24,650:25,660:26,670:27,680:28,690:29,
+  700:30,710:31,720:32,730:33,740:34,750:35,760:36,770:37,780:38,790:39,
+  800:40,810:41,820:42,830:43,840:44,850:45,860:46,870:47,880:48,890:49,
+  900:50,910:51,920:52,930:53,940:54,950:55,960:56,970:57,980:58,990:59,
+  1000:60,1010:61,1020:62,1030:63,1040:64,1050:65,1060:66,1070:67,1080:68,1090:69,
+  1100:70,1110:71,1120:72,1130:73,1140:74,1150:75,1160:76,1170:77,1180:78,1190:79,
+  1200:80,1210:81,1220:82,1230:83,1240:84,1250:85,1260:86,1270:87,1280:88,1290:89,
+  1300:90,1310:91,1320:92,1330:93,1340:94,1350:95,1360:96,1370:97,1380:98,1390:99,
+  1400:100,1410:101,1420:102,1430:103
+};
+
+function bodyTrojskok(cm, pohlavi) {
+  if (!cm || cm <= 0) return 0;
+  const zaokr = Math.floor(cm / 10) * 10;
+  const tabulka = pohlavi === 'CH' ? TROJSKOK_CHLAPCI : TROJSKOK_DIVKY;
+  // Najdi nejblizsi nizsi hodnotu v tabulce
+  const keys = Object.keys(tabulka).map(Number).sort((a,b) => a-b);
+  const key = keys.filter(k => k <= zaokr).pop();
+  return key !== undefined ? tabulka[key] : 0;
+}
+
+function bodyHod(cm) {
+  if (!cm || cm <= 0) return 0;
+  const zaokr = Math.floor(cm / 10) * 10;
+  const keys = Object.keys(HOD_MICEM_DIVKY).map(Number).sort((a,b) => a-b);
+  const key = keys.filter(k => k <= zaokr).pop();
+  return key !== undefined ? HOD_MICEM_DIVKY[key] : 0;
+}
+
+function bodySplh(s) {
+  if (!s || s <= 0) return 0;
+  // Zaokrouhlit nahoru na 0.1s
+  const zaokr = Math.ceil(s * 10) / 10;
+  const keys = Object.keys(SPLH_DIVKY).map(Number).sort((a,b) => b-a); // sestupne - horsi cas = mensi body
+  const key = keys.filter(k => k >= zaokr).pop();
+  return key !== undefined ? SPLH_DIVKY[key] : 0;
+}
+
+
+
+// =====================================================================
+// MSAL AUTH
+// =====================================================================
+
+
+
+
+
+let msalInstance, accessToken, currentUser;
+let zavodnici = [];
+let trojskokMode = 'CH';
+
+async function initMsal() {
+  try {
+    msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: CONFIG.clientId,
+        authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+        redirectUri: 'https://dukepoleno.github.io/silovy-ctyryboj-zs/'
+      },
+      cache: { cacheLocation: 'sessionStorage' }
+    });
+    await msalInstance.initialize();
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp) {
+      onAuthSuccess(resp);
+    } else {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) acquireToken(accounts[0]);
+    }
+  } catch(e) {
+    showToast('Chyba inicializace: ' + e.message, true);
+  }
+}
+
+async function signIn() {
+  try {
+    if (!msalInstance) { showToast('Aplikace se načítá, zkuste znovu', true); return; }
+    await msalInstance.loginRedirect({ scopes: CONFIG.scopes });
+  } catch(e) { showToast('Chyba přihlášení: ' + e.message, true); }
+}
+
+window.addEventListener('load', initMsal);
+
+
+
+async function acquireToken(account) {
+  try {
+    const resp = await msalInstance.acquireTokenSilent({ scopes: CONFIG.scopes, account });
+    onAuthSuccess(resp);
+  } catch(e) {
+    console.log('Silent token failed, redirecting:', e.message);
+    await msalInstance.acquireTokenRedirect({ scopes: CONFIG.scopes, account });
+  }
+}
+
+const ALLOWED_DOMAIN = 'sstas-karvina.cz';
+const ADMIN_EMAIL = 'ppolednik@sstas-karvina.cz';
+let currentUserEmail = '';
+let isAdmin = false;
+
+async function onAuthSuccess(resp) {
+  accessToken = resp.accessToken;
+  showLoading('Ověřuji přístup...');
+  try {
+    // Ziskej info o uzivateli
+    const userInfo = await graphRequest('/me?$select=mail,userPrincipalName,displayName');
+    currentUserEmail = (userInfo.mail || userInfo.userPrincipalName || '').toLowerCase();
+    const domain = currentUserEmail.split('@')[1];
+
+    console.log('Prihlaseny uzivatel:', currentUserEmail);
+
+    // Kontrola domeny
+    if (domain !== ALLOWED_DOMAIN) {
+      showToast('Přístup odepřen — pouze účty @' + ALLOWED_DOMAIN, true);
+      await msalInstance.logout();
+      return;
+    }
+
+    isAdmin = currentUserEmail === ADMIN_EMAIL;
+    console.log('Admin:', isAdmin);
+
+    await loadData();
+    showScreen('scr-menu');
+    updateMenuForRole();
+  } catch(e) {
+    showToast('Chyba přihlášení: ' + e.message, true);
+  } finally {
+    hideLoading();
+  }
+}
+
+function updateMenuForRole() {
+  const btnPrepocet = document.getElementById('btn-prepocet');
+  if (btnPrepocet) btnPrepocet.style.display = isAdmin ? 'flex' : 'none';
+  const btnUlozit = document.getElementById('btn-ulozit-zavod');
+  if (btnUlozit) btnUlozit.style.display = isAdmin ? 'flex' : 'none';
+  const btnReset = document.getElementById('btn-reset');
+  if (btnReset) btnReset.style.display = isAdmin ? 'flex' : 'none';
+}
+
+// =====================================================================
+// GRAPH API
+// =====================================================================
+async function graphRequest(url, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const resp = await fetch('https://graph.microsoft.com/v1.0' + url, opts);
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Graph API chyba ${resp.status}: ${err}`);
+  }
+  if (resp.status === 204 || method === 'DELETE') return null;
+  return resp.json();
+}
+
+async function getFileId() {
+  // Pristup pres sdileny odkaz - funguje pro vsechny uzivatele v organizaci
+  const data = await graphRequest(`/shares/${CONFIG.shareId}/driveItem`);
+  return data.id;
+}
+
+async function getDriveId() {
+  const data = await graphRequest(`/shares/${CONFIG.shareId}/driveItem`);
+  return data.parentReference.driveId;
+}
+
+async function getTableRows(fileId, tableName) {
+  const data = await graphRequest(`/drives/${driveId}/items/${fileId}/workbook/tables/${tableName}/rows`);
+  return data.value;
+}
+
+async function updateRow(fileId, tableName, rowIndex, values) {
+  // Use the row index property from the API, not array index
+  await graphRequest(
+    `/drives/${driveId}/items/${fileId}/workbook/tables/${tableName}/rows/itemAt(index=${rowIndex})`,
+    'PATCH',
+    { values: [values] }
+  );
+}
+
+async function addRow(fileId, tableName, values) {
+  await graphRequest(
+    `/drives/${driveId}/items/${fileId}/workbook/tables/${tableName}/rows/add`,
+    'POST',
+    { values: [values] }
+  );
+}
+
+async function prepocitatPoradi(fileId, tableName) {
+  const cfg = SLOUPCE[tableName];
+  // Nacti vsechny radky
+  const rows = await getTableRows(fileId, tableName);
+  // Spocitej CelkemBody pro kazdeho zavodnika
+  const updated = rows.map(r => {
+    const v = [...r.values[0]];
+    if (!v[0] || v[0] === 0 || v[0] === 'test') return { values: [v], cislo: null };
+    const celkem = cfg.body.reduce((sum, idx) => sum + (Number(v[idx]) || 0), 0);
+    v[cfg.celkem] = celkem;
+    return { values: [v], cislo: v[0], celkem };
+  });
+  // Spocitej poradi - seradit podle CelkemBody sestupne
+  const soutezici = updated.filter(r => r.cislo && r.cislo !== 0);
+  const sorted = [...soutezici].sort((a, b) => b.celkem - a.celkem);
+  soutezici.forEach(z => {
+    const rank = sorted.findIndex(s => s.cislo === z.cislo) + 1;
+    z.values[0][cfg.poradi] = rank;
+  });
+  // Zapis vsechny radky zpet
+  for (let i = 0; i < rows.length; i++) {
+    const r = updated[i];
+    if (r.cislo && r.cislo !== 0) {
+      await updateRow(fileId, tableName, i, r.values[0]);
+    }
+  }
+}
+
+async function upsertRow(fileId, tableName, cislo, buildRow) {
+  const rows = await getTableRows(fileId, tableName);
+  const found = rows.find(r => Number(r.values[0][0]) === cislo);
+  if (found) {
+    const existing = found.values[0];
+    const rowData = buildRow(existing);
+    const realIdx = rows.indexOf(found);
+    await updateRow(fileId, tableName, realIdx, rowData);
+  } else {
+    const rowData = buildRow(null);
+    // Tabulka je predpripravena s prazdnymi radky - zapis do prvniho prazdneho, jinak pridej na konec
+    const emptyIdx = rows.findIndex(r => r.values[0].every(x => x === null || x === ''));
+    if (emptyIdx >= 0) {
+      await updateRow(fileId, tableName, emptyIdx, rowData);
+    } else {
+      await addRow(fileId, tableName, rowData);
+    }
+  }
+}
+
+// =====================================================================
+// DATA LOADING
+// =====================================================================
+let fileId = null;
+let driveId = null;
+
+async function loadData() {
+  const driveItem = await graphRequest(`/shares/${CONFIG.shareId}/driveItem`);
+  fileId = driveItem.id;
+  driveId = driveItem.parentReference.driveId;
+  // Načteme závodníky
+  const rows = await getTableRows(fileId, 'Zavodnici');
+  zavodnici = rows.map((r, i) => ({
+    index: i,
+    cislo: r.values[0][0],
+    jmeno: r.values[0][1],
+    prijmeni: r.values[0][2],
+    pohlavi: r.values[0][3],
+    rokNarozeni: r.values[0][4],
+    skola: r.values[0][5]
+  }));
+}
+
+// =====================================================================
+// LOOKUP HELPERS
+// =====================================================================
+function findZavodnik(cislo) {
+  return zavodnici.find(z => Number(z.cislo) === Number(cislo));
+}
+
+function setJmenoCard(cardId, zavodnik) {
+  const card = document.getElementById(cardId);
+  if (!zavodnik) {
+    card.innerHTML = '<div class="info-sub">Závodník nenalezen</div>';
+    return;
+  }
+  card.innerHTML = `
+    <div class="info-name">${zavodnik.jmeno} ${zavodnik.prijmeni}</div>
+    <div class="info-sub">${zavodnik.skola} · č. ${zavodnik.cislo}</div>
+  `;
+}
+
+function lookupZavodnik(prefix) {
+  const cislo = document.getElementById(prefix + '-cislo').value;
+  const z = findZavodnik(cislo);
+  setJmenoCard(prefix + '-jmeno-card', z || null);
+}
+
+// =====================================================================
+// KLIKY
+// =====================================================================
+async function submitKliky() {
+  const cislo = parseInt(document.getElementById('kliky-cislo').value);
+  const opakovani = parseInt(document.getElementById('kliky-opakovani').value);
+  if (!cislo || isNaN(opakovani)) { showToast('Vyplňte všechna pole', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodník nenalezen', true); return; }
+  const body = opakovani * 1;
+
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupKL = await checkDuplicita(TBL_CHLAPCI, cislo, 4);
+    await upsertRow(fileId, TBL_CHLAPCI, cislo, (existing) => {
+      const r = existing ? [...existing] : Array(16).fill(null);
+      r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+      r[4]=opakovani; r[5]=body;
+      return r;
+    });
+    await logZapis('Kliky', cislo, `${z.jmeno} ${z.prijmeni}`, `${opakovani} op. = ${body} bodů`, dupKL);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: ${opakovani} op. = ${body} bodů`);
+    resetForm(['kliky-cislo','kliky-opakovani']);
+    document.getElementById('kliky-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodníka</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// TROJSKOK
+// =====================================================================
+function showDisciplina(screen, mode) {
+  trojskokMode = mode;
+  const subtitle = document.getElementById('trojskok-subtitle');
+  const backBtn = document.getElementById('trojskok-back');
+  const label = document.getElementById('trojskok-cislo-label');
+  if (mode === 'CH') {
+    subtitle.textContent = 'Chlapci · 3 pokusy · nejlepší cm';
+    backBtn.onclick = () => showScreen('scr-chlapci');
+    document.getElementById('trojskok-cislo').placeholder = '1 – 99';
+    label.textContent = 'Číslo závodníka';
+  } else {
+    subtitle.textContent = 'Dívky · 3 pokusy · nejlepší cm';
+    backBtn.onclick = () => showScreen('scr-divky');
+    document.getElementById('trojskok-cislo').placeholder = '101 – 199';
+    label.textContent = 'Číslo závodnice';
+  }
+  showScreen(screen);
+}
+
+async function submitTrojskok() {
+  const cislo = parseInt(document.getElementById('trojskok-cislo').value);
+  const p1 = parseFloat(document.getElementById('trojskok-p1').value) || 0;
+  const p2 = parseFloat(document.getElementById('trojskok-p2').value) || 0;
+  const p3 = parseFloat(document.getElementById('trojskok-p3').value) || 0;
+  if (!cislo) { showToast('Vyplňte číslo závodníka', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodník nenalezen', true); return; }
+
+  const tableName = trojskokMode === 'CH' ? TBL_CHLAPCI : TBL_DIVKY;
+  const nejlepsi = Math.max(p1, p2, p3);
+  const body = bodyTrojskok(nejlepsi, trojskokMode);
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupTS = await checkDuplicita(tableName, cislo, trojskokMode === 'CH' ? 6 : 4);
+    if (trojskokMode === 'CH') {
+      await upsertRow(fileId, tableName, cislo, (existing) => {
+        const r = existing ? [...existing] : Array(16).fill(null);
+        r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+        r[6]=p1; r[7]=p2; r[8]=p3; r[9]=body;
+        return r;
+      });
+    } else {
+      await upsertRow(fileId, tableName, cislo, (existing) => {
+        const r = existing ? [...existing] : Array(18).fill(null);
+        r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+        r[4]=p1; r[5]=p2; r[6]=p3; r[7]=body;
+        return r;
+      });
+    }
+    await logZapis(`Trojskok ${trojskokMode === 'CH' ? 'chlapci' : 'dívky'}`, cislo, `${z.jmeno} ${z.prijmeni}`, `${p1}/${p2}/${p3} cm, nejlepší ${nejlepsi} = ${body} bodů`, dupTS);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: nejlepší ${nejlepsi} cm = ${body} bodů`);
+    resetForm(['trojskok-cislo','trojskok-p1','trojskok-p2','trojskok-p3']);
+    document.getElementById('trojskok-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodníka</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// SHYBY
+// =====================================================================
+async function submitShyby() {
+  const cislo = parseInt(document.getElementById('shyby-cislo').value);
+  const opakovani = parseInt(document.getElementById('shyby-opakovani').value);
+  if (!cislo || isNaN(opakovani)) { showToast('Vyplňte všechna pole', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodník nenalezen', true); return; }
+  const body = opakovani * 3;
+
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupSH = await checkDuplicita(TBL_CHLAPCI, cislo, 10);
+    await upsertRow(fileId, TBL_CHLAPCI, cislo, (existing) => {
+      const r = existing ? [...existing] : Array(16).fill(null);
+      r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+      r[10]=opakovani; r[11]=body;
+      return r;
+    });
+    await logZapis('Shyby', cislo, `${z.jmeno} ${z.prijmeni}`, `${opakovani} op. = ${body} bodů`, dupSH);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: ${opakovani} op. = ${body} bodů`);
+    resetForm(['shyby-cislo','shyby-opakovani']);
+    document.getElementById('shyby-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodníka</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// PŘEDNOSY
+// =====================================================================
+async function submitPrednosy() {
+  const cislo = parseInt(document.getElementById('prednosy-cislo').value);
+  const opakovani = parseInt(document.getElementById('prednosy-opakovani').value);
+  if (!cislo || isNaN(opakovani)) { showToast('Vyplňte všechna pole', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodník nenalezen', true); return; }
+  const body = opakovani * 1.5;
+
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupPR = await checkDuplicita(TBL_CHLAPCI, cislo, 12);
+    await upsertRow(fileId, TBL_CHLAPCI, cislo, (existing) => {
+      const r = existing ? [...existing] : Array(16).fill(null);
+      r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+      r[12]=opakovani; r[13]=body;
+      return r;
+    });
+    await logZapis('Přednosy', cislo, `${z.jmeno} ${z.prijmeni}`, `${opakovani} op. = ${body} bodů`, dupPR);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: ${opakovani} op. = ${body} bodů`);
+    resetForm(['prednosy-cislo','prednosy-opakovani']);
+    document.getElementById('prednosy-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodníka</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// ŠPLH
+// =====================================================================
+async function submitSplh() {
+  const cislo = parseInt(document.getElementById('splh-cislo').value);
+  const p1 = parseFloat(document.getElementById('splh-p1').value) || 0;
+  const p2 = parseFloat(document.getElementById('splh-p2').value) || 0;
+  if (!cislo) { showToast('Vyplňte číslo závodnice', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodnice nenalezena', true); return; }
+
+  const platne = [p1, p2].filter(x => x > 0);
+  const nejlepsi = platne.length > 0 ? Math.min(...platne) : 0;
+  const body = bodySplh(nejlepsi);
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupSP = await checkDuplicita(TBL_DIVKY, cislo, 8);
+    await upsertRow(fileId, TBL_DIVKY, cislo, (existing) => {
+      const r = existing ? [...existing] : Array(18).fill(null);
+      r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+      r[8]=p1; r[9]=p2; r[10]=body;
+      return r;
+    });
+    await logZapis('Šplh', cislo, `${z.jmeno} ${z.prijmeni}`, `${p1}s / ${p2}s, nejlepší ${nejlepsi}s = ${body} bodů`, dupSP);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: nejlepší ${nejlepsi} s = ${body} bodů`);
+    resetForm(['splh-cislo','splh-p1','splh-p2']);
+    document.getElementById('splh-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodnice</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// HOD MÍČEM
+// =====================================================================
+async function submitHod() {
+  const cislo = parseInt(document.getElementById('hod-cislo').value);
+  const p1 = parseFloat(document.getElementById('hod-p1').value) || 0;
+  const p2 = parseFloat(document.getElementById('hod-p2').value) || 0;
+  const p3 = parseFloat(document.getElementById('hod-p3').value) || 0;
+  if (!cislo) { showToast('Vyplňte číslo závodnice', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodnice nenalezena', true); return; }
+
+  const nejlepsiHod = Math.max(p1, p2, p3);
+  const bodyHod2 = bodyHod(nejlepsiHod);
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupHM = await checkDuplicita(TBL_DIVKY, cislo, 11);
+    await upsertRow(fileId, TBL_DIVKY, cislo, (existing) => {
+      const r = existing ? [...existing] : Array(18).fill(null);
+      r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+      r[11]=p1; r[12]=p2; r[13]=p3; r[14]=bodyHod2;
+      return r;
+    });
+    await logZapis('Hod míčem', cislo, `${z.jmeno} ${z.prijmeni}`, `${p1}/${p2}/${p3} cm, nejlepší ${nejlepsiHod} = ${bodyHod2} bodů`, dupHM);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: nejlepší ${nejlepsiHod} cm = ${bodyHod2} bodů`);
+    resetForm(['hod-cislo','hod-p1','hod-p2','hod-p3']);
+    document.getElementById('hod-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodnice</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// LEHY-SEDY
+// =====================================================================
+async function submitLehySedy() {
+  const cislo = parseInt(document.getElementById('lehysedy-cislo').value);
+  const opakovani = parseInt(document.getElementById('lehysedy-opakovani').value);
+  if (!cislo || isNaN(opakovani)) { showToast('Vyplňte všechna pole', true); return; }
+  const z = findZavodnik(cislo);
+  if (!z) { showToast('Závodnice nenalezena', true); return; }
+
+  showLoading('Ukládám výsledek...');
+  try {
+    const dupLS = await checkDuplicita(TBL_DIVKY, cislo, 15);
+    await upsertRow(fileId, TBL_DIVKY, cislo, (existing) => {
+      const r = existing ? [...existing] : Array(18).fill(null);
+      r[0]=cislo; r[1]=z.jmeno; r[2]=z.prijmeni; r[3]=z.skola;
+      r[15]=opakovani;
+      return r;
+    });
+    await logZapis('Lehy-sedy', cislo, `${z.jmeno} ${z.prijmeni}`, `${opakovani} opakování`, dupLS);
+    showToast(`✅ ${z.jmeno} ${z.prijmeni}: ${opakovani} opakování = ${opakovani} bodů`);
+    resetForm(['lehysedy-cislo','lehysedy-opakovani']);
+    document.getElementById('lehysedy-jmeno-card').innerHTML = '<div class="info-sub">Zadejte číslo závodnice</div>';
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// LOGGING
+// =====================================================================
+function logZapis(disciplina, cisloZavodnika, jmenoZavodnika, hodnota, jeDuplicita) {
+  try {
+    const cas = new Date().toLocaleString('cs-CZ');
+    const duplicita = jeDuplicita ? 'ANO' : 'NE';
+    // Uloz do sessionStorage
+    const logKey = 'soutez_log';
+    const existingLog = JSON.parse(localStorage.getItem(logKey) || '[]');
+    existingLog.push({cas, zapisovatel: currentUserEmail, disciplina, cisloZavodnika, jmenoZavodnika, hodnota, duplicita});
+    localStorage.setItem(logKey, JSON.stringify(existingLog));
+    console.log(`Log: ${disciplina} z.${cisloZavodnika} ${hodnota} duplicita=${duplicita}`);
+    // Duplicitu oznac toastem
+    if (jeDuplicita) {
+      showToast(`⚠️ PŘEPIS: ${jmenoZavodnika} — ${disciplina}`, true);
+    }
+  } catch(e) {
+    console.error('Chyba logovani:', e.message);
+  }
+}
+
+async function stahnoutLog() {
+  const logKey = 'soutez_log';
+  const log = JSON.parse(localStorage.getItem(logKey) || '[]');
+  if (log.length === 0) { showToast('Log je prázdný', true); return; }
+
+  // Vytvor CSV
+  let csvRows = ['Cas;Zapisovatel;Disciplina;CisloZavodnika;JmenoZavodnika;Hodnota;Duplicita'];
+  log.forEach(r => {
+    const dup = r.duplicita === 'ANO' ? 'ANO *** PREPIS ***' : 'NE';
+    csvRows.push([r.cas, r.zapisovatel, r.disciplina, r.cisloZavodnika, r.jmenoZavodnika, r.hodnota, dup].join(';'));
+  });
+  const csv = csvRows.join('\r\n');
+  const cas = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+  const fileName = 'log_' + currentUserEmail.split('@')[0] + '_' + cas + '.csv';
+  const bom = '﻿';
+
+  showLoading('Nahrávám log na Teams...');
+  try {
+    // Upload do slozky Logy ve stejnem drivu jako datovy soubor
+    const uploadUrl = '/drives/' + driveId + '/items/' + fileId + '/../Logy/' + fileName + ':/content';
+    // Alternativa - pouzij parent folder
+    const uploadUrl2 = '/drives/' + driveId + '/root:/General/Logy/' + fileName + ':/content';
+    const csvData = bom + csv;
+    const resp = await fetch('https://graph.microsoft.com/v1.0' + uploadUrl2, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'text/csv'
+      },
+      body: csvData
+    });
+    if (resp.ok) {
+      showToast('✅ Log nahrán na Teams — ' + log.length + ' záznamů');
+    } else {
+      const errText = await resp.text();
+      console.error('Upload error:', errText);
+      throw new Error('Upload selhal: ' + resp.status + ' ' + errText.substring(0,100));
+    }
+  } catch(e) {
+    console.error('Upload logu selhal:', e.message);
+    // Fallback - stahni lokalne
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ Log stažen lokálně — ' + log.length + ' záznamů');
+  } finally {
+    hideLoading();
+  }
+
+  if (confirm('Log odeslán (' + log.length + ' záznamů). Vymazat log z tohoto zařízení?')) {
+    localStorage.removeItem(logKey);
+    showToast('Log vymazán');
+  }
+}
+
+async function checkDuplicita(tableName, cislo, disciplinaSloupec) {
+  // Zkontroluj jestli uz ma zavodnik zapis v dane discipline
+  try {
+    const rows = await getTableRows(fileId, tableName);
+    const found = rows.find(r => Number(r.values[0][0]) === cislo);
+    if (!found) return false;
+    const val = found.values[0][disciplinaSloupec];
+    return val !== null && val !== undefined && val !== '' && val !== 0;
+  } catch(e) {
+    return false;
+  }
+}
+
+// =====================================================================
+// ULOŽIT ZÁVOD
+// =====================================================================
+async function ulozitZavod() {
+  showLoading('Načítám výsledky...');
+  try {
+    const [cr, dr] = await Promise.all([
+      getTableRows(fileId, TBL_CHLAPCI),
+      getTableRows(fileId, TBL_DIVKY)
+    ]);
+
+    const chlapci = cr.filter(r => r.values[0][0] && Number(r.values[0][0]) > 0 && r.values[0][1] !== 'test')
+                      .sort((a, b) => (Number(b.values[0][14])||0) - (Number(a.values[0][14])||0));
+    const divky = dr.filter(r => r.values[0][0] && Number(r.values[0][0]) > 0 && r.values[0][1] !== 'test')
+                    .sort((a, b) => (Number(b.values[0][16])||0) - (Number(a.values[0][16])||0));
+
+    // Vytvor CSV
+    let rows = ['Poradi;Jmeno;Prijmeni;Skola;Kliky_op;Trojskok_cm;Shyby_op;Prednosy_op;Body'];
+    chlapci.forEach((r, i) => {
+      const v = r.values[0];
+      const ts = Math.max(Number(v[6])||0, Number(v[7])||0, Number(v[8])||0);
+      rows.push([i+1, v[1], v[2], v[3], v[4]||0, ts||0, v[10]||0, v[12]||0, v[14]||0].join(';'));
+    });
+    rows.push('');
+    rows.push('Poradi;Jmeno;Prijmeni;Skola;Trojskok_cm;Splh_s;Hod_cm;LehySedy_op;Body');
+    divky.forEach((r, i) => {
+      const v = r.values[0];
+      const ts = Math.max(Number(v[4])||0, Number(v[5])||0, Number(v[6])||0);
+      const splhArr = [v[8], v[9]].filter(x => x && Number(x) > 0).map(Number);
+      const splh = splhArr.length > 0 ? Math.min(...splhArr) : 0;
+      const hod = Math.max(Number(v[11])||0, Number(v[12])||0, Number(v[13])||0);
+      rows.push([i+1, v[1], v[2], v[3], ts||0, splh||0, hod||0, v[15]||0, v[16]||0].join(';'));
+    });
+
+    const csv = rows.join('\r\n');
+    const cas = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+    const fileName = 'zavod_' + cas + '.csv';
+
+    // Nahraj na Teams do slozky Logy
+    const resp = await fetch('https://graph.microsoft.com/v1.0/drives/' + driveId + '/root:/General/Logy/' + fileName + ':/content', {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'text/csv' },
+      body: '﻿' + csv
+    });
+    if (resp.ok) {
+      showToast('✅ Závod uložen do Teams — ' + (chlapci.length + divky.length) + ' závodníků');
+    } else {
+      throw new Error('Upload selhal: ' + resp.status);
+    }
+  } catch(e) {
+    showToast('Chyba: ' + e.message, true);
+  } finally {
+    hideLoading();
+  }
+}
+
+// =====================================================================
+// RESET ZÁVODU
+// =====================================================================
+async function resetZavodu() {
+  if (!confirm('RESET ZÁVODU\n\nVymaže se:\n• Výsledky chlapců\n• Výsledky dívek\n• Závodníci\n• Raw registrace\n\nPokračovat?')) return;
+  if (!confirm('Jste si jisti? Tato akce je nevratná!')) return;
+
+  showLoading('Resetuji závod...');
+  try {
+    const tabulky = [TBL_CHLAPCI, TBL_DIVKY, 'Zavodnici', 'RawRegistrace'];
+    for (const tbl of tabulky) {
+      // Nacti vsechny radky
+      const rows = await getTableRows(fileId, tbl);
+      // Smaz vsechny krome testovacich (cislo 0) a hlavicek
+      const toDelete = rows.filter(r => {
+        const v = r.values[0][0];
+        return v !== 0 && v !== null && v !== '' && v !== 'test';
+      });
+      // Smaz od konce (aby se indexy neposunuly)
+      for (let i = toDelete.length - 1; i >= 0; i--) {
+        const idx = rows.indexOf(toDelete[i]);
+        await graphRequest(
+          '/drives/' + driveId + '/items/' + fileId + '/workbook/tables/' + tbl + '/rows/itemAt(index=' + idx + ')',
+          'DELETE'
+        );
+      }
+    }
+    // Reload dat
+    await loadData();
+    showToast('✅ Závod resetován — připraven na nový závod');
+  } catch(e) {
+    showToast('Chyba resetu: ' + e.message, true);
+  } finally {
+    hideLoading();
+  }
+}
+
+// =====================================================================
+// PŘEPOČET POŘADÍ
+// =====================================================================
+async function spustitPrepocet() {
+  showLoading('Přepočítávám pořadí...');
+  try {
+    await prepocitatPoradi(fileId, TBL_CHLAPCI);
+    await prepocitatPoradi(fileId, TBL_DIVKY);
+    showToast('✅ Pořadí přepočítáno!');
+  } catch(e) { showToast('Chyba: ' + e.message, true); }
+  finally { hideLoading(); }
+}
+
+// =====================================================================
+// UI HELPERS
+// =====================================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function resetForm(ids) {
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+}
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function showLoading(msg='Ukládám...') {
+  document.querySelector('.loading-text').textContent = msg;
+  document.getElementById('loading').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+</script>
+</body>
+</html>
